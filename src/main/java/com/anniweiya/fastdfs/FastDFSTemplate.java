@@ -5,7 +5,7 @@ import com.anniweiya.fastdfs.pool.ConnectionPoolFactory;
 import org.csource.common.MyException;
 import org.csource.common.NameValuePair;
 import org.csource.fastdfs.ProtoCommon;
-import org.csource.fastdfs.StorageClient;
+import org.csource.fastdfs.StorageClient1;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -61,7 +61,7 @@ public class FastDFSTemplate {
                 index++;
             }
         }
-        StorageClient client = getClient();
+        StorageClient1 client = getClient();
 
         try {
             String[] uploadResults = client.upload_file(data, ext, valuePairs);
@@ -103,7 +103,7 @@ public class FastDFSTemplate {
      * @throws FastDFSException
      */
     public byte[] loadFile(String groupName, String remoteFileName) throws FastDFSException {
-        StorageClient client = getClient();
+        StorageClient1 client = getClient();
         try {
             return client.download_file(groupName, remoteFileName);
         } catch (Exception e) {
@@ -134,7 +134,7 @@ public class FastDFSTemplate {
      */
     public void deleteFile(String groupName, String remoteFileName) throws FastDFSException {
         int code;
-        StorageClient client = getClient();
+        StorageClient1 client = getClient();
         try {
             code = client.delete_file(groupName, remoteFileName);
         } catch (Exception e) {
@@ -161,45 +161,29 @@ public class FastDFSTemplate {
      */
     public String setFileAbsolutePath(String group, String path)
             throws IOException, NoSuchAlgorithmException, MyException {
-        int ts = (int) (System.currentTimeMillis() / 1000), port;
+        int ts = (int) (System.currentTimeMillis() / 1000);
         String token = "";
         if (factory.isG_anti_steal_token()) {
             token = ProtoCommon.getToken(path, ts, factory.getG_secret_key());
             token = "?token=" + token + "&ts=" + ts;
         }
-        List<String> addressList;
-        if (factory.getNginx_address() != null) {
-            addressList = factory.getNginx_address();
-        } else {
-            addressList = factory.getTracker_servers();
-        }
-
+        List<String> addressList = factory.getNginx_address();
         Random random = new Random();
         int i = random.nextInt(addressList.size());
-        String[] split = addressList.get(i).split(":", 2);
-
-        if (split.length > 1) {
-            port = Integer.parseInt(split[1].trim());
-        } else {
-            port = factory.getG_tracker_http_port();
-        }
-        String address = split[0].trim();
-        return factory.getProtocol() +
-               address + ":" +
-               port +
+        String address = addressList.get(i);
+        return address +
                factory.getSepapator() +
                group +
                factory.getSepapator() +
                path + token;
-
     }
 
     public void setFileAbsolutePath(FastDfsInfo fastDfsInfo) throws IOException, NoSuchAlgorithmException, MyException {
         fastDfsInfo.setFileAbsolutePath(this.setFileAbsolutePath(fastDfsInfo.getGroup(), fastDfsInfo.getPath()));
     }
 
-    protected StorageClient getClient() {
-        StorageClient client = null;
+    protected StorageClient1 getClient() {
+        StorageClient1 client = null;
         while (client == null) {
             try {
                 client = connPoolFactory.getClient();
@@ -210,7 +194,7 @@ public class FastDFSTemplate {
         return client;
     }
 
-    protected void releaseClient(StorageClient client) {
+    protected void releaseClient(StorageClient1 client) {
         connPoolFactory.releaseConnection(client);
     }
 
